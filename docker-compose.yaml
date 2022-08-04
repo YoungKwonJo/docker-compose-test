@@ -1,0 +1,53 @@
+version: "3"
+
+services:
+    client:
+        image: nginx
+        ports:
+            - 443:443
+        networks:
+            monitoring:
+                ipv4_address: 172.30.0.2
+        volumes:
+            - ./conf:/etc/nginx/conf.d
+            - /etc/letsencrypt:/etc/letsencrypt
+            - ./ssl:/myssl
+    grafana:
+        image: grafana/grafana:latest
+        container_name: grafana
+        ports:
+            - 3000:3000
+        networks:
+            monitoring:
+                ipv4_address: 172.30.0.3
+        environment:
+            - GF_SMTP_ENABLED=true
+            - GF_SMTP_HOST=uuuu
+            - GF_SMTP_USER=uuu
+            - GF_SMTP_PASSWORD=uuu
+            - GF_SERVER_ROOT_URL=https://{Domain}
+        volumes:
+            - ./grafana:/var/lib/grafana:rw
+        user: '0'
+    influxdb:
+        image: influxdb:latest
+        container_name: influxdb
+        restart: always
+        ports:
+            - 8086:8086
+            - 8083:8083
+        networks:
+            monitoring:
+                ipv4_address: 172.30.0.4
+        environment:
+            - INFLUXD_TLS_CERT=/etc/ssl/domain_cert.pem
+            - INFLUXD_TLS_KEY=/etc/ssl/domain_privkey.pem
+        volumes:
+            - ./influxdb:/var/lib/influxdb2:rw
+            - ./ssl:/etc/ssl
+            - /etc/letsencrypt:/etc/letsencrypt
+networks:
+  monitoring:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
